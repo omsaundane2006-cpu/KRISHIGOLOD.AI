@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="{{ current_language }}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}KRISHIGOLD.AI{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="site-header">
+      <div>
+        <p class="eyebrow">{{ t("smart_agriculture_platform") }}</p>
+        <h1><a href="{{ url_for('home') }}">KRISHIGOLD.AI</a></h1>
+        <p class="header-copy">{{ t("header_copy") }}</p>
+      </div>
+      <nav class="nav-links">
+        {% if session.get('user_id') %}
+        <a href="{{ url_for('dashboard') }}">{{ t("dashboard") }}</a>
+        {% if session.get('role') in ['expert', 'admin'] %}<a href="{{ url_for('expert_panel') }}">{{ t("expert") }}</a>{% endif %}
+        {% if session.get('role') == 'admin' %}<a href="{{ url_for('admin_panel') }}">{{ t("admin") }}</a>{% endif %}
+        <a href="{{ url_for('logout') }}">{{ t("logout") }}</a>
+        {% else %}
+        <a href="{{ url_for('login') }}">{{ t("login") }}</a>
+        <a href="{{ url_for('register') }}">{{ t("register") }}</a>
+        {% endif %}
+      </nav>
+    </header>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+      <section class="flash-stack">
+        {% for category, message in messages %}
+        <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+      </section>
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </div>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
