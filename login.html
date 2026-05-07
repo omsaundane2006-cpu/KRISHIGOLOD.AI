@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}{{ t("login_title") }}{% endblock %}
+{% block content %}
+<section class="card narrow">
+  <p class="eyebrow">{{ t("welcome_back_eyebrow") }}</p>
+  <h2>{{ t("login_title") }}</h2>
+  <p class="section-copy">{{ t("login_copy") }}</p>
+  <form method="post" class="form-grid">
+    <label>{{ t("email") }}<input type="email" name="email" required></label>
+    <label>{{ t("password") }}<input type="password" name="password" required></label>
+    <button class="button primary" type="submit">{{ t("login") }}</button>
+  </form>
+</section>
+{% endblock %}

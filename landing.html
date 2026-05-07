@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}KRUSHIGOLD.AI{% endblock %}
+{% block content %}
+<section class="hero-card">
+  <div>
+    <p class="pill">{{ t("landing_pill") }}</p>
+    <h2>{{ t("landing_title") }}</h2>
+    <p class="hero-copy">{{ t("landing_copy") }}</p>
+    <div class="button-row">
+      <a class="button primary" href="{{ url_for('register') }}">{{ t("create_account_cta") }}</a>
+      <a class="button secondary" href="{{ url_for('login') }}">{{ t("use_demo_account") }}</a>
+    </div>
+  </div>
+  <div class="hero-mosaic">
+    <div class="showcase-card">
+      <span class="showcase-label">{{ t("showcase_productivity") }}</span>
+      <strong>{{ t("showcase_productivity_title") }}</strong>
+      <p>{{ t("showcase_productivity_copy") }}</p>
+    </div>
+    <div class="showcase-card">
+      <span class="showcase-label">{{ t("showcase_market") }}</span>
+      <strong>{{ t("showcase_market_title") }}</strong>
+      <p>{{ t("showcase_market_copy") }}</p>
+    </div>
+    <div class="showcase-card">
+      <span class="showcase-label">{{ t("showcase_community") }}</span>
+      <strong>{{ t("showcase_community_title") }}</strong>
+      <p>{{ t("showcase_community_copy") }}</p>
+    </div>
+  </div>
+</section>
+
+<section class="grid three top-space">
+  <article class="card feature-card feature-card-soft">
+    <p class="eyebrow">{{ t("knowledge_news_title") }}</p>
+    <h3>{{ t("feature_news_title") }}</h3>
+    <p>{{ t("feature_news_copy") }}</p>
+  </article>
+  <article class="card feature-card feature-card-cool">
+    <p class="eyebrow">{{ t("knowledge_weather_title") }}</p>
+    <h3>{{ t("feature_weather_title") }}</h3>
+    <p>{{ t("feature_weather_copy") }}</p>
+  </article>
+  <article class="card feature-card feature-card-warm">
+    <p class="eyebrow">{{ t("feature_roles") }}</p>
+    <h3>{{ t("feature_roles_title") }}</h3>
+    <p>{{ t("feature_roles_copy") }}</p>
+  </article>
+</section>
+
+<section class="card top-space">
+  <div class="section-head"><h3>{{ t("quick_access") }}</h3><span class="badge">{{ t("ready_to_use") }}</span></div>
+  <div class="grid two compact">
+    <div class="info-panel">
+      <div class="mini-stat"><span>{{ t("farmer") }}</span><strong>farmer@example.com</strong></div>
+      <div class="mini-stat"><span>{{ t("expert") }}</span><strong>expert@example.com</strong></div>
+      <div class="mini-stat"><span>{{ t("admin") }}</span><strong>admin@example.com</strong></div>
+      <div class="mini-stat"><span>{{ t("password_label") }}</span><strong>demo123</strong></div>
+    </div>
+    <div class="panel soft">
+      <h3>{{ t("built_for_real_farm_work") }}</h3>
+      <p>{{ t("built_for_real_farm_work_copy") }}</p>
+    </div>
+  </div>
+</section>
+{% endblock %}

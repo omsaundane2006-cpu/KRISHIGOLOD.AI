@@ -1,0 +1,478 @@
+{% extends "base.html" %}
+{% block title %}{{ t("dashboard") }}{% endblock %}
+{% block content %}
+<section class="hero-card">
+  <div>
+    <p class="pill">{{ t("farm_operations_dashboard") }}</p>
+    <h2>{{ user["name"] }}</h2>
+    <p class="hero-copy">{{ t("farmer_profile_line").format(role=farmer_profile["role"], village=farmer_profile["village"], district=farmer_profile["district"], state=farmer_profile["state"], crops=farmer_profile["crops"]) }}</p>
+    <div class="button-row top-space">
+      <span class="hero-chip">{{ weather["summary"] }}</span>
+      <span class="hero-chip">{{ mandi_crop }}</span>
+      <span class="hero-chip">{{ language_label }}</span>
+    </div>
+  </div>
+  <div class="status-grid">
+    <div class="mini-stat"><span>{{ t("weather_api") }}</span><strong>{{ weather["current"] }}</strong></div>
+    <div class="mini-stat"><span>{{ t("mandi_api") }}</span><strong>{{ mandi_crop }}</strong></div>
+    <div class="mini-stat"><span>{{ t("openai_label") }}</span><strong>{% if ai_api_configured %}{{ t("live") }}{% else %}{{ t("demo") }}{% endif %}</strong></div>
+  </div>
+</section>
+
+<section class="grid two top-space">
+  <article class="card">
+    <div class="section-head"><h3>{{ t("farm_overview") }}</h3><span class="badge">{{ t("daily_summary") }}</span></div>
+    <p class="section-copy">{{ t("feature_weather_copy") }}</p>
+  </article>
+  <article class="card">
+    <div class="section-head"><h3>{{ t("working_snapshot") }}</h3><span class="badge">{{ t("live_app") }}</span></div>
+    <div class="grid three compact">
+      <div class="panel soft"><h4>{{ t("weather") }}</h4><p>{{ weather["summary"] }}</p></div>
+      <div class="panel warm"><h4>{{ t("mandi") }}</h4><p>{{ mandi_location or user["location"] or t("no_location") }}</p></div>
+      <div class="panel cool"><h4>{{ t("community") }}</h4><p>{{ t("active_posts").format(count=posts|length) }}</p></div>
+    </div>
+  </article>
+</section>
+
+<section class="grid two top-space">
+  {% for card in overview_cards %}
+  <article class="card overview-card overview-{{ card['tone'] }}">
+    <p class="eyebrow">{{ card["eyebrow"] }}</p>
+    <div class="section-head">
+      <h3>{{ card["title"] }}</h3>
+      <span class="badge">{{ card["value"] }}</span>
+    </div>
+    <p>{{ card["body"] }}</p>
+    <p class="muted-note">{{ card["note"] }}</p>
+  </article>
+  {% endfor %}
+</section>
+
+<section class="grid three top-space">
+  {% for card in knowledge_cards %}
+  <article class="card feature-card">
+    <p class="eyebrow">{{ card["title"] }}</p>
+    <p class="section-copy">{{ card["body"] }}</p>
+    <div class="stack top-space">
+      {% for item in card["items"] %}
+      <div class="list-card"><p>{{ item }}</p></div>
+      {% endfor %}
+    </div>
+  </article>
+  {% endfor %}
+</section>
+
+<section class="card">
+  <div class="section-head"><h3>{{ t("language") }}</h3><span class="badge">{{ language_label }}</span></div>
+  <form method="post" class="form-grid">
+    <input type="hidden" name="action" value="update_language">
+    <label>{{ t("language") }}
+      <select name="language">
+        {% for code, label in language_options.items() %}
+        <option value="{{ code }}" {% if code == current_language %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button class="button secondary" type="submit">{{ t("save_language") }}</button>
+  </form>
+</section>
+
+<section class="card">
+  <div class="section-head"><h3>{{ t("farmer_information") }}</h3><span class="badge">{{ t("login_profile") }}</span></div>
+  <div class="grid three compact">
+    <div class="panel">
+      <h4>{{ t("location") }}</h4>
+      <p><strong>{{ t("village") }}:</strong> {{ farmer_profile["village"] }}</p>
+      <p><strong>{{ t("district") }}:</strong> {{ farmer_profile["district"] }}</p>
+      <p><strong>{{ t("state") }}:</strong> {{ farmer_profile["state"] }}</p>
+    </div>
+    <div class="panel warm">
+      <h4>{{ t("preferences") }}</h4>
+      <p><strong>{{ t("role") }}:</strong> {{ farmer_profile["role"] }}</p>
+    </div>
+    <div class="panel cool">
+      <h4>{{ t("crop_details") }}</h4>
+      <p><strong>{{ t("crops") }}:</strong> {{ farmer_profile["crops"] }}</p>
+      <p><strong>{{ t("saved_location") }}:</strong> {{ user["location"] or t("no_location") }}</p>
+    </div>
+  </div>
+</section>
+
+<section class="grid two">
+  <article class="card">
+    <div class="section-head"><h3>{{ t("weather_and_gps") }}</h3><span class="badge">{{ weather["source"] }}</span></div>
+    <form method="post" class="form-grid">
+      <input type="hidden" name="action" value="refresh_weather">
+      <label>{{ t("state") }}
+        <select name="gps_state" id="gps-state">
+          <option value="">{{ t("select_state") }}</option>
+          {% for state in state_options %}
+          <option value="{{ state }}" {% if state == gps_state %}selected{% endif %}>{{ state }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>{{ t("district") }}
+        <select name="gps_district" id="gps-district" data-selected="{{ gps_district }}">
+          <option value="">{{ t("select_district") }}</option>
+        </select>
+      </label>
+      <label>{{ t("village") }}
+        <select name="gps_village" id="gps-village" data-selected="{{ gps_village }}">
+          <option value="">{{ t("select_village") }}</option>
+        </select>
+      </label>
+      <button class="button secondary" type="submit">{{ t("refresh_weather") }}</button>
+    </form>
+    <p><strong>{{ t("showing_weather_for") }}</strong> {{ gps_location or weather["location"] }}</p>
+    {% if weather["error"] %}<p>{{ weather["error"] }}</p>{% endif %}
+    <div class="weather-summary">
+      <div><strong class="temp">{{ weather["current"] }}</strong><p>{{ weather["summary"] }}</p></div>
+      <div class="metric-list">
+        {% for label, value in weather["metrics"].items() %}
+        <div class="metric-row"><span>{{ t(label) }}</span><strong>{{ value }}</strong></div>
+        {% endfor %}
+      </div>
+    </div>
+    {% if weather["soil_label"] %}<p><strong>{{ t("soil") }}:</strong> {{ weather["soil_label"] }}</p>{% endif %}
+    <div class="forecast-grid">
+      {% for day in weather["forecast"] %}
+      <div class="forecast-card"><strong>{{ day["day"] }}</strong><p>{{ day["temp"] }}</p><span>{{ day["note"] }}</span></div>
+      {% endfor %}
+    </div>
+  </article>
+
+  <article class="card">
+    <div class="section-head"><h3>{{ t("market_rate_and_notifications") }}</h3><span class="badge">{{ t("stored_api") }}</span></div>
+    <form method="post" class="form-grid">
+      <input type="hidden" name="action" value="refresh_mandi">
+      <label>{{ t("state") }}
+        <select name="mandi_state" id="mandi-state">
+          <option value="">{{ t("select_state") }}</option>
+          {% for state in state_options %}
+          <option value="{{ state }}" {% if state == mandi_state %}selected{% endif %}>{{ state }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>{{ t("district") }}
+        <select name="mandi_district" id="mandi-district" data-selected="{{ mandi_district }}">
+          <option value="">{{ t("select_district") }}</option>
+        </select>
+      </label>
+      <label>{{ t("select_crop") }}
+        <select name="mandi_crop">
+          {% for crop in mandi_crop_options %}
+          <option value="{{ crop }}" {% if crop == mandi_crop %}selected{% endif %}>{{ crop }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <button class="button secondary" type="submit">{{ t("search_local_mandi") }}</button>
+    </form>
+    <p><strong>{{ t("local_mandi_area") }}</strong> {{ mandi_location or user["location"] or t("no_location") }}</p>
+    <p><strong>{{ t("selected_crop") }}</strong> {{ mandi_crop }}</p>
+    {% if mandi_market_options %}
+    <p><strong>{{ t("available_mandi_markets") }}</strong> {{ mandi_market_options|length }}</p>
+    <div class="stack">
+      {% for option in mandi_market_options[:8] %}
+      <div class="list-card"><p>{{ option }}</p></div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    <div class="stack">
+      {% for item in market_rates %}
+      <div class="list-card"><strong>{{ item["crop"] }}</strong><p>{{ item["market"] }}</p><span>{{ item["location"] }} | {{ item["price"] }} | {{ item["source"] }} | {{ item["date"] }}</span></div>
+      {% else %}
+      <div class="list-card"><p>{{ t("no_mandi_rate") }}</p></div>
+      {% endfor %}
+    </div>
+    <h4>{{ t("notifications") }}</h4>
+    <div class="stack">
+      {% for item in notifications %}
+      <div class="list-card"><strong>{{ item["title"] }}</strong><p>{{ item["body"] }}</p></div>
+      {% else %}
+      <div class="list-card"><p>{{ t("no_notifications") }}</p></div>
+      {% endfor %}
+    </div>
+  </article>
+</section>
+
+<section class="grid two">
+  <article class="card">
+    <div class="section-head"><h3>{{ t("crop_advisory") }}</h3><span class="badge">{{ advisory["crop"] }}</span></div>
+    <form method="post" class="form-grid">
+      <input type="hidden" name="action" value="refresh_advisory">
+      <label>{{ t("select_crop_advisory") }}
+        <select name="advisory_crop">
+          {% for crop in crop_options %}
+          <option value="{{ crop }}" {% if crop == advisory_crop %}selected{% endif %}>{{ crop }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <button class="button secondary" type="submit">{{ t("load_advisory") }}</button>
+    </form>
+    <p>{{ advisory["hero"] }}</p>
+    <div class="grid three compact">
+      <div class="panel"><h4>{{ t("guidance") }}</h4><ul>{% for item in advisory["guidance"] %}<li>{{ item }}</li>{% endfor %}</ul></div>
+      <div class="panel warm"><h4>{{ t("fertilizer") }}</h4><ul>{% for item in advisory["fertilizer"] %}<li>{{ item }}</li>{% endfor %}</ul></div>
+      <div class="panel cool"><h4>{{ t("pesticide") }}</h4><ul>{% for item in advisory["pesticide"] %}<li>{{ item }}</li>{% endfor %}</ul></div>
+    </div>
+  </article>
+
+  <article class="card">
+    <div class="section-head"><h3>{{ t("ai_crop_advisor_voice_support") }}</h3><span class="badge">{{ t("live_ai_hook") }}</span></div>
+    <form method="post" class="form-grid">
+      <input type="hidden" name="action" value="chat">
+      <label>{{ t("crop_focus") }}
+        <input list="crop-options" name="crop_focus" value="{{ chat_crop }}" placeholder="{{ t('select_crop') }}">
+      </label>
+      <label>{{ t("question") }}
+        <textarea id="ai-question" name="question" rows="4" placeholder="{{ t('question_placeholder') }}"></textarea>
+      </label>
+      <button class="button secondary" type="button" id="voice-chat-button">{{ t("start_voice_chat") }}</button>
+      <p id="voice-chat-status">{{ t("voice_chat_hint") }}</p>
+      <button class="button primary" type="submit">{{ t("ask_ai") }}</button>
+    </form>
+    {% if question_translations %}
+    <div class="response-box top-space">
+      <strong>{{ t("multi_language_support") }}</strong>
+      <p><strong>{{ t("detected_language") }}:</strong> {{ question_translations["detected_language"] }}</p>
+      <p><strong>{{ t("original_text") }}:</strong> {{ question_translations["text"]["original"] }}</p>
+      <p><strong>{{ t("translation_english") }}:</strong> {{ question_translations["text"]["en"] }}</p>
+      <p><strong>{{ t("translation_hindi") }}:</strong> {{ question_translations["text"]["hi"] }}</p>
+      {% if not question_translations["available"] %}
+      <p>{{ t("translation_service_unavailable") }}</p>
+      {% endif %}
+    </div>
+    {% endif %}
+    {% if chat_answer %}<div class="response-box"><strong>{{ t("ai_reply") }}</strong><p>{{ chat_answer }}</p></div>{% endif %}
+  </article>
+</section>
+
+<section class="grid two">
+  <article class="card">
+    <div class="section-head"><h3>{{ t("disease_detection") }}</h3><span class="badge">{{ t("image_upload_rule_engine") }}</span></div>
+    <form method="post" enctype="multipart/form-data" class="form-grid">
+      <input type="hidden" name="action" value="disease">
+      <label>{{ t("crops") }}
+        <select name="crop">
+          {% for crop in crop_options %}
+          <option value="{{ crop }}" {% if crop == disease_crop %}selected{% endif %}>{{ crop }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>{{ t("symptom") }}
+        <select name="symptom">
+          <option value="spots">{{ t("leaf_spots") }}</option>
+          <option value="yellowing">{{ t("yellowing") }}</option>
+          <option value="holes">{{ t("chewing_holes") }}</option>
+        </select>
+      </label>
+      <label>{{ t("crop_image") }}<input type="file" name="crop_image" accept="image/*"></label>
+      <button class="button primary" type="submit">{{ t("save_disease_report") }}</button>
+    </form>
+    <div class="stack">
+      {% for report in reports %}
+      <div class="list-card"><strong>{{ report["diagnosis"] }}</strong><p>{{ report["crop"] }} | {{ report["symptom"] }} | {{ report["name"] }}</p><span>{{ report["solution"] }}</span></div>
+      {% else %}
+      <div class="list-card"><p>{{ t("no_disease_reports") }}</p></div>
+      {% endfor %}
+    </div>
+  </article>
+
+  <article class="card">
+    <div class="section-head"><h3>{{ t("farmer_community") }}</h3><span class="badge">{{ t("live_community_feed") }}</span></div>
+    <form method="post" class="form-grid">
+      <input type="hidden" name="action" value="post">
+      <label>{{ t("question_title") }}<input name="title" required></label>
+      <label>{{ t("problem_details") }}<textarea name="body" rows="4" required></textarea></label>
+      <button class="button primary" type="submit">{{ t("post_question") }}</button>
+    </form>
+    <div class="stack">
+      {% for post in posts %}
+      <div class="list-card">
+        <strong>{{ post["title"] }}</strong>
+        <p>{{ post["name"] }}</p>
+        <span>{{ post["body"] }}</span>
+        <div class="top-space">
+          {% for reply in replies_by_post.get(post["id"], []) %}
+          <div class="response-box">
+            <strong>{{ t("reply") }}: {{ reply["name"] }}</strong>
+            <p>{{ reply["body"] }}</p>
+          </div>
+          {% endfor %}
+        </div>
+        <form method="post" class="form-grid top-space">
+          <input type="hidden" name="action" value="reply">
+          <input type="hidden" name="post_id" value="{{ post['id'] }}">
+          <label>{{ t("reply") }}
+            <textarea name="reply_body" rows="2" placeholder="{{ t('reply_placeholder') }}" required></textarea>
+          </label>
+          <button class="button secondary" type="submit">{{ t("send_reply") }}</button>
+        </form>
+      </div>
+      {% else %}
+      <div class="list-card"><p>{{ t("no_posts") }}</p></div>
+      {% endfor %}
+    </div>
+  </article>
+</section>
+<datalist id="crop-options">
+  {% for crop in crop_options %}
+  <option value="{{ crop }}"></option>
+  {% endfor %}
+</datalist>
+{% endblock %}
+{% block scripts %}
+<script>
+  (() => {
+    const translationEndpoint = "{{ url_for('translate_api') }}";
+    const locationDirectory = {{ location_directory | tojson }};
+
+    async function translateText(text, target) {
+      const response = await fetch(translationEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          input: text,
+          source: "auto",
+          output: target
+        })
+      });
+      const data = await response.json();
+      return data.output || data.text?.[target] || text;
+    }
+
+    async function detectLanguage(text) {
+      const response = await fetch(translationEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text,
+          targets: ["en", "hi"]
+        })
+      });
+      const data = await response.json();
+      return data.detected_language || "unknown";
+    }
+
+    window.krishiTranslate = {
+      translate: translateText,
+      detectLanguage: detectLanguage,
+    };
+
+    function fillSelect(select, items, placeholder, selectedValue) {
+      select.innerHTML = "";
+      const placeholderOption = document.createElement("option");
+      placeholderOption.value = "";
+      placeholderOption.textContent = placeholder;
+      select.appendChild(placeholderOption);
+
+      items.forEach((item) => {
+        const option = document.createElement("option");
+        option.value = item;
+        option.textContent = item;
+        if (item === selectedValue) {
+          option.selected = true;
+        }
+        select.appendChild(option);
+      });
+
+      select.disabled = items.length === 0;
+    }
+
+    function bindLocationCascade(stateId, districtId, villageId) {
+      const stateSelect = document.getElementById(stateId);
+      const districtSelect = document.getElementById(districtId);
+      const villageSelect = document.getElementById(villageId);
+      if (!stateSelect || !districtSelect || !villageSelect) {
+        return;
+      }
+
+      const initialDistrict = districtSelect.dataset.selected || "";
+      const initialVillage = villageSelect.dataset.selected || "";
+
+      function updateDistricts(selectedDistrict = "", selectedVillage = "") {
+        const state = stateSelect.value;
+        const districts = state ? Object.keys(locationDirectory[state] || {}).sort() : [];
+        fillSelect(districtSelect, districts, "{{ t('select_district') }}", selectedDistrict);
+        updateVillages(selectedVillage);
+      }
+
+      function updateVillages(selectedVillage = "") {
+        const state = stateSelect.value;
+        const district = districtSelect.value;
+        const villages = state && district ? (locationDirectory[state] || {})[district] || [] : [];
+        fillSelect(villageSelect, villages, "{{ t('select_village') }}", selectedVillage);
+      }
+
+      stateSelect.addEventListener("change", () => updateDistricts("", ""));
+      districtSelect.addEventListener("change", () => updateVillages(""));
+      updateDistricts(initialDistrict, initialVillage);
+    }
+
+    function bindDistrictCascade(stateId, districtId) {
+      const stateSelect = document.getElementById(stateId);
+      const districtSelect = document.getElementById(districtId);
+      if (!stateSelect || !districtSelect) {
+        return;
+      }
+
+      const initialDistrict = districtSelect.dataset.selected || "";
+
+      function updateDistricts(selectedDistrict = "") {
+        const state = stateSelect.value;
+        const districts = state ? Object.keys(locationDirectory[state] || {}).sort() : [];
+        fillSelect(districtSelect, districts, "{{ t('select_district') }}", selectedDistrict);
+      }
+
+      stateSelect.addEventListener("change", () => updateDistricts(""));
+      updateDistricts(initialDistrict);
+    }
+
+    bindLocationCascade("gps-state", "gps-district", "gps-village");
+    bindDistrictCascade("mandi-state", "mandi-district");
+
+    const voiceChatButton = document.getElementById("voice-chat-button");
+    const voiceChatStatus = document.getElementById("voice-chat-status");
+    const questionBox = document.getElementById("ai-question");
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      if (voiceChatButton) {
+        voiceChatButton.disabled = true;
+      }
+      if (voiceChatStatus) {
+        voiceChatStatus.textContent = "{{ t('voice_chat_not_supported') }}";
+      }
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "{{ speech_locale }}";
+    recognition.interimResults = true;
+    recognition.continuous = false;
+
+    voiceChatButton.addEventListener("click", () => {
+      recognition.start();
+      voiceChatButton.textContent = "{{ t('voice_chat_listening_button') }}";
+      voiceChatStatus.textContent = "{{ t('voice_chat_listening') }}";
+    });
+
+    recognition.addEventListener("result", (event) => {
+      const transcript = Array.from(event.results)
+        .map((result) => result[0].transcript)
+        .join(" ");
+      questionBox.value = transcript.trim();
+      voiceChatStatus.textContent = "{{ t('voice_question_added') }}";
+    });
+
+    recognition.addEventListener("end", () => {
+      voiceChatButton.textContent = "{{ t('start_voice_chat') }}";
+    });
+
+    recognition.addEventListener("error", (event) => {
+      voiceChatButton.textContent = "{{ t('start_voice_chat') }}";
+      voiceChatStatus.textContent = `{{ t('voice_chat_error') }}: ${event.error}.`;
+    });
+  })();
+</script>
+{% endblock%}

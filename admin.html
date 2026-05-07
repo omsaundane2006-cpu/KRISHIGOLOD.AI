@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}{{ t("admin_panel") }}{% endblock %}
+{% block content %}
+<section class="grid two">
+  <article class="card">
+    <div class="section-head"><h2>{{ t("send_notifications") }}</h2><span class="badge">{{ t("admin_tools") }}</span></div>
+    <form method="post" class="form-grid">
+      <label>{{ t("target_user") }}
+        <select name="target_user_id">
+          <option value="">{{ t("all_users") }}</option>
+          {% for user in users %}
+          <option value="{{ user['id'] }}">{{ user['name'] }} ({{ user['role'] }})</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>{{ t("title") }}<input name="title" required></label>
+      <label>{{ t("body") }}<textarea name="body" rows="4" required></textarea></label>
+      <button class="button primary" type="submit">{{ t("create_notification") }}</button>
+    </form>
+  </article>
+  <article class="card">
+    <div class="section-head"><h2>{{ t("users_and_roles") }}</h2><span class="badge">{{ t("users_count").format(count=users|length) }}</span></div>
+    <div class="stack">
+      {% for user in users %}
+      <div class="list-card"><strong>{{ user["name"] }}</strong><p>{{ user["email"] }}</p><span>{{ t(user["role"]) }} | {{ user["location"] or t("no_location") }}</span></div>
+      {% endfor %}
+    </div>
+  </article>
+</section>
+
+<section class="card">
+  <div class="section-head"><h2>{{ t("notification_history") }}</h2></div>
+  <div class="stack">
+    {% for item in notifications %}
+    <div class="list-card"><strong>{{ item["title"] }}</strong><p>{{ item["created_at"] }}</p><span>{{ item["body"] }}</span></div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

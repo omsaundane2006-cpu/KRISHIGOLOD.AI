@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}{{ t("register") }}{% endblock %}
+{% block content %}
+<section class="card narrow">
+  <p class="eyebrow">{{ t("register_eyebrow") }}</p>
+  <h2>{{ t("create_account") }}</h2>
+  <p class="section-copy">{{ t("register_copy") }}</p>
+  <form method="post" class="form-grid">
+    <label>{{ t("name") }}<input name="name" value="{{ request.form.get('name', '') }}" required></label>
+    <label>{{ t("email") }}<input type="email" name="email" value="{{ request.form.get('email', '') }}" required></label>
+    <label>{{ t("password") }}<input type="password" name="password" required></label>
+    <label>{{ t("role") }}
+      <select name="role">
+        <option value="farmer" {% if request.form.get('role', 'farmer') == 'farmer' %}selected{% endif %}>{{ t("farmer") }}</option>
+        <option value="expert" {% if request.form.get('role') == 'expert' %}selected{% endif %}>{{ t("expert") }}</option>
+        <option value="admin" {% if request.form.get('role') == 'admin' %}selected{% endif %}>{{ t("admin") }}</option>
+      </select>
+    </label>
+    <label>{{ t("state") }}
+      <select name="state" id="register-state">
+        <option value="">{{ t("select_state") }}</option>
+        {% for state in state_options %}
+        <option value="{{ state }}" {% if request.form.get('state') == state %}selected{% endif %}>{{ state }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>{{ t("district") }}
+      <select name="district" id="register-district" data-selected="{{ request.form.get('district', '') }}">
+        <option value="">{{ t("select_district") }}</option>
+      </select>
+    </label>
+    <label>{{ t("village") }}
+      <select name="village" id="register-village" data-selected="{{ request.form.get('village', '') }}">
+        <option value="">{{ t("select_village") }}</option>
+      </select>
+    </label>
+    <label>{{ t("crops") }}
+      <select name="crops">
+        <option value="">{{ t("select_crop") }}</option>
+        {% for crop in crop_options %}
+        <option value="{{ crop }}" {% if request.form.get('crops') == crop %}selected{% endif %}>{{ crop }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button class="button primary" type="submit">{{ t("register") }}</button>
+  </form>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+  (() => {
+    const locationDirectory = {{ location_directory | tojson }};
+
+    function fillSelect(select, items, placeholder, selectedValue) {
+      select.innerHTML = "";
+      const placeholderOption = document.createElement("option");
+      placeholderOption.value = "";
+      placeholderOption.textContent = placeholder;
+      select.appendChild(placeholderOption);
+
+      items.forEach((item) => {
+        const option = document.createElement("option");
+        option.value = item;
+        option.textContent = item;
+        if (item === selectedValue) {
+          option.selected = true;
+        }
+        select.appendChild(option);
+      });
+
+      select.disabled = items.length === 0;
+    }
+
+    function bindLocationCascade(stateId, districtId, villageId) {
+      const stateSelect = document.getElementById(stateId);
+      const districtSelect = document.getElementById(districtId);
+      const villageSelect = document.getElementById(villageId);
+      if (!stateSelect || !districtSelect || !villageSelect) {
+        return;
+      }
+
+      const initialDistrict = districtSelect.dataset.selected || "";
+      const initialVillage = villageSelect.dataset.selected || "";
+
+      function updateDistricts(selectedDistrict = "", selectedVillage = "") {
+        const state = stateSelect.value;
+        const districts = state ? Object.keys(locationDirectory[state] || {}).sort() : [];
+        fillSelect(districtSelect, districts, "{{ t('select_district') }}", selectedDistrict);
+        updateVillages(selectedVillage);
+      }
+
+      function updateVillages(selectedVillage = "") {
+        const state = stateSelect.value;
+        const district = districtSelect.value;
+        const villages = state && district ? (locationDirectory[state] || {})[district] || [] : [];
+        fillSelect(villageSelect, villages, "{{ t('select_village') }}", selectedVillage);
+      }
+
+      stateSelect.addEventListener("change", () => updateDistricts("", ""));
+      districtSelect.addEventListener("change", () => updateVillages(""));
+      updateDistricts(initialDistrict, initialVillage);
+    }
+
+    bindLocationCascade("register-state", "register-district", "register-village");
+  })();
+</script>
+{% endblock %}

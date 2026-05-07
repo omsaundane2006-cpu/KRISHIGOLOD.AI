@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}{{ t("expert_panel") }}{% endblock %}
+{% block content %}
+<section class="grid two">
+  <article class="card">
+    <div class="section-head"><h2>{{ t("farmer_questions") }}</h2><span class="badge">{{ t("expert_view") }}</span></div>
+    <div class="stack">
+      {% for post in posts %}
+      <div class="list-card"><strong>{{ post["title"] }}</strong><p>{{ post["name"] }} | {{ post["location"] }}</p><span>{{ post["body"] }}</span></div>
+      {% endfor %}
+    </div>
+  </article>
+  <article class="card">
+    <div class="section-head"><h2>{{ t("disease_reports") }}</h2><span class="badge">{{ t("review_queue") }}</span></div>
+    <div class="stack">
+      {% for report in reports %}
+      <div class="list-card"><strong>{{ report["diagnosis"] }}</strong><p>{{ report["name"] }} | {{ report["crop"] }} | {{ report["symptom"] }}</p><span>{{ report["solution"] }}</span></div>
+      {% endfor %}
+    </div>
+  </article>
+</section>
+{% endblock %}
